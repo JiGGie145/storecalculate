@@ -1,0 +1,64 @@
+## Project Overview: Disguised Multi-Budget Shopping Assistant
+
+### **1. Executive Summary**
+
+The **Disguised Multi-Budget Shopping Assistant** is a lightweight, mobile-first web app that combines the speed of a tally calculator with the structure of a multi-category budget tracker.
+
+Disguised under a clean, minimalist financial/ledger theme, it allows you to walk through a store, enter item prices with one hand, and instantly see two critical numbers simultaneously:
+
+1. **Total Store Spend:** The combined sum of everything currently in your cart (ensuring you don't exceed your cash on hand at checkout).
+2. **Category Budget Subtractions:** Live remaining balances deducted from separate, dedicated budgets (e.g., **Groceries** vs. **Baby**), even when purchased in a single store transaction.
+
+---
+
+### **2. Core Problem & Solution**
+
+* **The Problem:** When shopping for multiple household needs (e.g., family groceries and baby essentials like formula or diapers) in a single trip, standard store receipts combine everything into one lump sum. It is difficult to track remaining budget limits for individual spending buckets in real time while making sure you don't run out of cash at the register.
+* **The Solution:** A two-tier real-time calculator. Every price added immediately updates the **Store Cart Total** while simultaneously deducting from its designated **Category Budget**.
+
+---
+
+### **3. Key Features & Functionality**
+
+* **Prominent Store Total Header:** A top-level display showing the running total of all items in your cart so you can easily compare it against your cash on hand.
+* **Live Category Budget Cards:** Visual indicators showing:
+* Amount allocated (e.g., $1,000 for Groceries, $500 for Baby).
+* Amount spent so far in the current shop.
+* Live **remaining balance** for each budget.
+
+
+* **Fast One-Tap Item Entry:**
+* Simple numeric entry pad with an optional item name field (e.g., "Formula" or "Milk").
+* Instant category action buttons (`+ Groceries` / `+ Baby`) that add the item, update all running totals, and clear the input field in a single tap.
+
+
+* **Interactive Cart Ledger & Filter Tabs:**
+* View all added items in reverse chronological order with quick deletion (`✕`) to easily correct mistyped prices or items put back on shelves.
+* Filter tabs (`All`, `Groceries`, `Baby`) to review items added to specific buckets.
+
+
+* **Editable Category Budgets:** Configurable budget caps for each category, adjustable via a modal popup without resetting your active shopping cart.
+* **End-of-Trip Actions:** A single `Complete Checkout` action to clear the active shopping session once paid.
+
+---
+
+### **4. User Journey Walkthrough**
+
+```text
+[Enter Store] ──> [Key in 18.00] ──> [Tap "+ Groceries"] ──> Cart: M 18.00 | Groceries: M 982 left
+                                                          │
+[Grab Formula] ─> [Key in 250.00] ─> [Tap "+ Baby"] ─────> Cart: M 268.00 | Baby: M 250 left
+                                                          │
+[At Register] ──> [Check Store Total] ───────────────────> M 268.00 (Matches Cash on Hand)
+                                                          │
+[Complete] ─────> [Tap "Complete Shopping"] ─────────────> Cart Cleared for Next Shop
+
+```
+
+---
+
+### **5. Proposed Tech Stack & Architecture**
+
+* **Frontend:** HTML5, Tailwind CSS (for modern UI styling), and vanilla JavaScript (for zero-dependency state management).
+* **Storage / Persistence:** LocalStorage or IndexedDB for local offline storage (ensuring fast load times inside stores with poor connectivity).
+* **Design Aesthetic:** Minimalist dark-mode dashboard (slate/emerald/sky palette) resembling a financial tracking tool or simple ledger.

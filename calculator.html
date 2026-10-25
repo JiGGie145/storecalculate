@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Shop Budget</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .active-tab {
+      border-bottom: 3px solid #3b82f6;
+      color: #3b82f6;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen pb-12 flex flex-col items-center">
+
+  <div class="w-full max-w-md bg-slate-900 min-h-screen flex flex-col justify-between shadow-2xl relative border-x border-slate-800">
+    
+    <!-- TOP HEADER & TOTAL -->
+    <div class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-20 shadow-md">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🛒</span>
+          <h1 class="font-bold text-slate-200 tracking-wide text-sm uppercase">Shopping Cart Ledger</h1>
+        </div>
+        <button onclick="toggleBudgetModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-lg border border-slate-700 transition">
+          ⚙️ Edit Budgets
+        </button>
+      </div>
+
+      <!-- Prominent Store Total -->
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center shadow-inner">
+        <span class="text-xs uppercase font-bold tracking-wider text-slate-400 block mb-1">Store Total</span>
+        <div class="text-4xl font-extrabold text-emerald-400 tracking-tight" id="storeTotalDisplay">
+          M 0.00
+        </div>
+      </div>
+
+      <!-- Dynamic Budget Progress Bars -->
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <!-- Grocery Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 p-2.5 rounded-xl">
+          <div class="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+            <span>🛒 Groceries</span>
+            <span id="groceryLeftText" class="text-emerald-400">M 1000 left</span>
+          </div>
+          <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+            <div id="groceryBar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>Spent: <span id="grocerySpentText">M 0</span></span>
+            <span>Limit: <span id="groceryBudgetDisplay">M 1000</span></span>
+          </div>
+        </div>
+
+        <!-- Baby Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 p-2.5 rounded-xl">
+          <div class="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+            <span>👶 Baby</span>
+            <span id="babyLeftText" class="text-sky-400">M 500 left</span>
+          </div>
+          <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+            <div id="babyBar" class="bg-sky-500 h-full w-0 transition-all duration-300"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>Spent: <span id="babySpentText">M 0</span></span>
+            <span>Limit: <span id="babyBudgetDisplay">M 500</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN ITEM ENTRY & LIST AREA -->
+    <div class="p-4 flex-1 flex flex-col gap-4">
+
+      <!-- Quick Item Input Card -->
+      <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-lg space-y-3">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <span class="absolute left-3 top-2.5 text-slate-400 font-bold">M</span>
+            <input type="number" id="itemAmount" placeholder="0.00" step="0.01" inputmode="decimal"
+                   class="w-full bg-slate-900 border border-slate-700 text-slate-100 font-bold text-lg rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-blue-500 transition">
+          </div>
+          <input type="text" id="itemName" placeholder="Item name (optional)" 
+                 class="flex-1 bg-slate-900 border border-slate-700 text-slate-100 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500 transition">
+        </div>
+
+        <!-- One-Tap Category Add Buttons -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="addItem('groceries')" class="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5 text-sm">
+            <span>+</span> 🛒 Groceries
+          </button>
+          <button onclick="addItem('baby')" class="bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5 text-sm">
+            <span>+</span> 👶 Baby
+          </button>
+        </div>
+      </div>
+
+      <!-- FILTER TABS & CART LEDGER -->
+      <div class="flex-1 flex flex-col">
+        <!-- View Filter Tabs -->
+        <div class="flex border-b border-slate-800 text-xs font-semibold mb-3">
+          <button onclick="setFilter('all')" id="tab-all" class="flex-1 py-2 text-center text-slate-400 active-tab">All Items (<span id="count-all">0</span>)</button>
+          <button onclick="setFilter('groceries')" id="tab-groceries" class="flex-1 py-2 text-center text-slate-400">🛒 Groceries (<span id="count-groceries">0</span>)</button>
+          <button onclick="setFilter('baby')" id="tab-baby" class="flex-1 py-2 text-center text-slate-400">👶 Baby (<span id="count-baby">0</span>)</button>
+        </div>
+
+        <!-- Item List -->
+        <div id="cartList" class="space-y-2 flex-1 max-h-[320px] overflow-y-auto pr-1">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER ACTIONS -->
+    <div class="p-4 bg-slate-900 border-t border-slate-800 sticky bottom-0 z-20 flex gap-2">
+      <button onclick="clearCart()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-xs border border-slate-700 transition">
+        Clear Cart
+      </button>
+      <button onclick="checkout()" class="flex-[2] bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs shadow-lg transition">
+        ✓ Complete Checkout
+      </button>
+    </div>
+
+  </div>
+
+  <!-- EDIT BUDGETS MODAL -->
+  <div id="budgetModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+      <h3 class="font-bold text-slate-100 text-base">Set Category Budgets</h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">Groceries Budget (M)</label>
+          <input type="number" id="inputGroceryBudget" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-semibold text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 mb-1 block">Baby Budget (M)</label>
+          <input type="number" id="inputBabyBudget" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100 font-semibold text-sm">
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="toggleBudgetModal()" class="flex-1 bg-slate-800 text-slate-300 font-semibold py-2 rounded-xl text-xs">Cancel</button>
+        <button onclick="saveBudgets()" class="flex-1 bg-blue-600 text-white font-semibold py-2 rounded-xl text-xs">Save Budgets</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State Management
+    let state = {
+      budgets: {
+        groceries: 1000,
+        baby: 500
+      },
+      items: [],
+      filter: 'all'
+    };
+
+    // DOM Elements
+    const storeTotalDisplay = document.getElementById('storeTotalDisplay');
+    const itemAmount = document.getElementById('itemAmount');
+    const itemName = document.getElementById('itemName');
+    const cartList = document.getElementById('cartList');
+    const budgetModal = document.getElementById('budgetModal');
+
+    function updateUI() {
+      // Totals
+      const grocerySpent = state.items.filter(i => i.category === 'groceries').reduce((acc, i) => acc + i.amount, 0);
+      const babySpent = state.items.filter(i => i.category === 'baby').reduce((acc, i) => acc + i.amount, 0);
+      const totalSpent = grocerySpent + babySpent;
+
+      storeTotalDisplay.textContent = `M ${totalSpent.toFixed(2)}`;
+
+      // Grocery Budget
+      const groceryLeft = state.budgets.groceries - grocerySpent;
+      document.getElementById('grocerySpentText').textContent = `M ${grocerySpent.toFixed(0)}`;
+      document.getElementById('groceryBudgetDisplay').textContent = `M ${state.budgets.groceries}`;
+      document.getElementById('groceryLeftText').textContent = `M ${groceryLeft.toFixed(0)} ${groceryLeft < 0 ? 'OVER' : 'left'}`;
+      document.getElementById('groceryLeftText').className = groceryLeft < 0 ? 'text-red-400 font-bold' : 'text-emerald-400';
+      const groceryPct = Math.min((grocerySpent / state.budgets.groceries) * 100, 100);
+      document.getElementById('groceryBar').style.width = `${groceryPct}%`;
+      document.getElementById('groceryBar').className = groceryLeft < 0 ? 'bg-red-500 h-full transition-all duration-300' : 'bg-emerald-500 h-full transition-all duration-300';
+
+      // Baby Budget
+      const babyLeft = state.budgets.baby - babySpent;
+      document.getElementById('babySpentText').textContent = `M ${babySpent.toFixed(0)}`;
+      document.getElementById('babyBudgetDisplay').textContent = `M ${state.budgets.baby}`;
+      document.getElementById('babyLeftText').textContent = `M ${babyLeft.toFixed(0)} ${babyLeft < 0 ? 'OVER' : 'left'}`;
+      document.getElementById('babyLeftText').className = babyLeft < 0 ? 'text-red-400 font-bold' : 'text-sky-400';
+      const babyPct = Math.min((babySpent / state.budgets.baby) * 100, 100);
+      document.getElementById('babyBar').style.width = `${babyPct}%`;
+      document.getElementById('babyBar').className = babyLeft < 0 ? 'bg-red-500 h-full transition-all duration-300' : 'bg-sky-500 h-full transition-all duration-300';
+
+      // Counts
+      document.getElementById('count-all').textContent = state.items.length;
+      document.getElementById('count-groceries').textContent = state.items.filter(i => i.category === 'groceries').length;
+      document.getElementById('count-baby').textContent = state.items.filter(i => i.category === 'baby').length;
+
+      // Render List
+      renderList();
+    }
+
+    function renderList() {
+      cartList.innerHTML = '';
+      const filtered = state.filter === 'all' 
+        ? state.items 
+        : state.items.filter(i => i.category === state.filter);
+
+      if (filtered.length === 0) {
+        cartList.innerHTML = `
+          <div class="text-center py-8 text-slate-500 text-xs italic">
+            No items in cart. Add an amount above!
+          </div>`;
+        return;
+      }
+
+      filtered.slice().reverse().forEach((item) => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-800/40 border border-slate-700/50 p-2.5 rounded-xl flex justify-between items-center text-xs';
+        
+        const isGrocery = item.category === 'groceries';
+        const tagColor = isGrocery ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-sky-950 text-sky-400 border-sky-800';
+        const tagLabel = isGrocery ? '🛒 Grocery' : '👶 Baby';
+
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md border text-[10px] font-semibold ${tagColor}">${tagLabel}</span>
+            <span class="font-medium text-slate-200">${item.name || 'Item'}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold text-slate-100 text-sm">M ${item.amount.toFixed(2)}</span>
+            <button onclick="removeItem(${item.id})" class="text-slate-500 hover:text-red-400 transition p-1">
+              ✕
+            </button>
+          </div>
+        `;
+        cartList.appendChild(div);
+      });
+    }
+
+    function addItem(category) {
+      const val = parseFloat(itemAmount.value);
+      if (isNaN(val) || val <= 0) return;
+
+      const newItem = {
+        id: Date.now(),
+        amount: val,
+        name: itemName.value.trim(),
+        category: category
+      };
+
+      state.items.push(newItem);
+      itemAmount.value = '';
+      itemName.value = '';
+      itemAmount.focus();
+      updateUI();
+    }
+
+    function removeItem(id) {
+      state.items = state.items.filter(i => i.id !== id);
+      updateUI();
+    }
+
+    function setFilter(filter) {
+      state.filter = filter;
+      ['all', 'groceries', 'baby'].forEach(f => {
+        const btn = document.getElementById(`tab-${f}`);
+        if (f === filter) {
+          btn.className = 'flex-1 py-2 text-center text-blue-400 active-tab';
+        } else {
+          btn.className = 'flex-1 py-2 text-center text-slate-400';
+        }
+      });
+      renderList();
+    }
+
+    function clearCart() {
+      if (state.items.length === 0) return;
+      if (confirm('Clear all items from current cart?')) {
+        state.items = [];
+        updateUI();
+      }
+    }
+
+    function checkout() {
+      if (state.items.length === 0) return;
+      alert('Checkout completed! Cart cleared.');
+      state.items = [];
+      updateUI();
+    }
+
+    function toggleBudgetModal() {
+      document.getElementById('inputGroceryBudget').value = state.budgets.groceries;
+      document.getElementById('inputBabyBudget').value = state.budgets.baby;
+      budgetModal.classList.toggle('hidden');
+    }
+
+    function saveBudgets() {
+      const g = parseFloat(document.getElementById('inputGroceryBudget').value);
+      const b = parseFloat(document.getElementById('inputBabyBudget').value);
+      if (!isNaN(g) && g >= 0) state.budgets.groceries = g;
+      if (!isNaN(b) && b >= 0) state.budgets.baby = b;
+      toggleBudgetModal();
+      updateUI();
+    }
+
+    // Initial render
+    updateUI();
+  </script>
+</body>
+</html>

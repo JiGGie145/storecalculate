@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="A private shopping ledger with live category budgets.">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <title>Ledger Flow | Shopping Ledger</title>
+</head>
+<body class="min-h-svh bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950">
+    <main id="login-view" class="relative flex min-h-svh items-center justify-center overflow-hidden px-5 py-10">
+        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(16,185,129,0.12),transparent_55%)]"></div>
+        <section class="relative w-full max-w-sm border border-slate-800 bg-slate-900/90 p-6 shadow-2xl shadow-black/30">
+            <div class="mb-8 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                    <i class="fa-solid fa-wallet" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <p class="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Private shopping ledger</p>
+                    <h1 class="text-lg font-semibold tracking-wide text-slate-100">Ledger Flow</h1>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-semibold text-white">Sign in</h2>
+            <p class="mb-6 mt-1 text-sm text-slate-400">Use the account provided by your administrator.</p>
+
+            <p id="configuration-message" class="mb-4 hidden border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-200" role="status"></p>
+            <p id="login-error" class="mb-4 hidden border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs leading-5 text-rose-200" role="alert"></p>
+
+            <form id="login-form" class="space-y-4">
+                <label class="block space-y-1.5 text-xs font-medium text-slate-300">
+                    Email
+                    <input id="login-email" name="email" type="email" autocomplete="username" required class="w-full border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-500" placeholder="name@example.com">
+                </label>
+                <label class="block space-y-1.5 text-xs font-medium text-slate-300">
+                    Password
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required class="w-full border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-500" placeholder="Password">
+                </label>
+                <button id="login-submit" type="submit" class="flex w-full items-center justify-center gap-2 bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">
+                    <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>
+                    Sign in to ledger
+                </button>
+            </form>
+            <p class="mt-6 border-t border-slate-800 pt-4 font-mono text-[10px] uppercase tracking-wider text-slate-600">LSL · Africa/Maseru</p>
+        </section>
+    </main>
+
+    <div id="calculator-view" class="hidden min-h-svh pb-8">
+        <header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 px-4 py-3 shadow-xl backdrop-blur-md">
+            <div class="mx-auto flex max-w-md items-center justify-between gap-3">
+                <div class="flex min-w-0 items-center gap-2.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                        <i class="fa-solid fa-wallet text-sm" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="truncate text-xs font-semibold uppercase tracking-wider text-slate-200">Ledger Flow</p>
+                        <p id="account-label" class="truncate text-[10px] text-slate-500"></p>
+                    </div>
+                </div>
+                <div class="flex shrink-0 items-center gap-3">
+                    <span id="sync-status" class="inline-flex items-center gap-1.5 text-[10px] text-slate-400" role="status">
+                        <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+                        Connecting
+                    </span>
+                    <button id="sign-out-button" type="button" class="flex h-8 w-8 items-center justify-center text-slate-400 transition hover:bg-slate-800 hover:text-white" title="Sign out" aria-label="Sign out">
+                        <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pt-4">
+            <section class="border border-slate-800 bg-slate-900 p-4" aria-labelledby="cart-total-heading">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h1 id="cart-total-heading" class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Register total</h1>
+                        <p id="cart-total-display" class="mt-1 font-mono text-3xl font-semibold leading-none text-emerald-400">M 0.00</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] uppercase tracking-wider text-slate-500">Current cart</p>
+                        <p id="cart-count-display" class="mt-1 font-mono text-sm text-slate-200">0 items</p>
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-2">
+                    <button id="clear-cart-button" type="button" class="flex items-center justify-center gap-2 border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-slate-500 hover:bg-slate-800">
+                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Clear cart
+                    </button>
+                    <button id="checkout-button" type="button" class="flex items-center justify-center gap-2 bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i> Complete checkout
+                    </button>
+                </div>
+            </section>
+
+            <section aria-labelledby="budgets-heading" class="space-y-2.5">
+                <div class="flex items-center justify-between px-0.5">
+                    <div>
+                        <h2 id="budgets-heading" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Budget allocations</h2>
+                        <p id="budget-period-label" class="mt-0.5 font-mono text-[10px] text-slate-500"></p>
+                    </div>
+                    <span class="text-[10px] text-slate-500">Managed account-side</span>
+                </div>
+                <div id="buckets-container" class="grid grid-cols-2 gap-2"></div>
+                <p id="empty-budgets-state" class="hidden border border-dashed border-slate-800 px-4 py-6 text-center text-xs text-slate-500">No active budgets are available.</p>
+            </section>
+
+            <section class="flex min-h-[220px] flex-col border border-slate-800 bg-slate-900/70 p-3" aria-labelledby="ledger-heading">
+                <div class="mb-2 flex items-center justify-between">
+                    <h2 id="ledger-heading" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Current cart</h2>
+                    <span class="font-mono text-[10px] text-slate-500">Newest first</span>
+                </div>
+                <div id="tab-headers" class="mb-2 flex items-center gap-1 overflow-x-auto border-b border-slate-800 pb-2" role="tablist" aria-label="Filter cart items">
+                    <button id="tab-all" type="button" data-filter="all" role="tab" aria-selected="true" class="whitespace-nowrap bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white">All <span id="count-all">0</span></button>
+                </div>
+                <div id="ledger-items-list" class="max-h-64 flex-1 space-y-2 overflow-y-auto pr-1">
+                    <div id="empty-ledger-state" class="flex min-h-40 flex-col items-center justify-center py-8 text-center text-slate-500">
+                        <i class="fa-solid fa-basket-shopping mb-2 text-2xl opacity-40" aria-hidden="true"></i>
+                        <p class="text-xs font-medium">Your cart is empty.</p>
+                        <p class="mt-1 text-[10px] text-slate-600">Add an item from the entry pad.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sticky bottom-2 z-20 space-y-1.5 border border-slate-800 bg-slate-950 p-2 shadow-2xl" aria-label="Quick item entry">
+                <div class="flex items-center gap-2">
+                    <label class="relative min-w-0 flex-1">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm text-slate-500">M</span>
+                        <input id="quick-amount-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Item price in maloti" placeholder="0.00" class="w-full border border-slate-800 bg-slate-900 py-2 pl-8 pr-3 font-mono text-xl font-bold text-white outline-none transition placeholder:text-slate-700 focus:border-emerald-500">
+                    </label>
+                    <input id="quick-note-input" type="text" maxlength="120" placeholder="Item name (optional)" aria-label="Item name, optional" class="w-1/2 border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-emerald-500">
+                </div>
+                <div>
+                    <p class="mb-1 px-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">Add to budget</p>
+                    <div id="speed-buttons-container" class="grid grid-cols-2 gap-2"></div>
+                    <p id="empty-categories-state" class="hidden border border-dashed border-slate-800 px-3 py-3 text-center text-[11px] text-slate-500">Ask your administrator to add an active budget.</p>
+                </div>
+                <button id="numpad-toggle" type="button" aria-expanded="false" class="flex w-full items-center justify-center gap-2 border border-slate-800 bg-slate-900/60 py-1 text-[11px] text-slate-400 transition hover:text-slate-200">
+                    <i class="fa-solid fa-calculator text-[10px]" aria-hidden="true"></i>
+                    <span id="numpad-toggle-text">Show on-screen keypad</span>
+                </button>
+                <div id="onscreen-numpad" class="hidden grid grid-cols-3 gap-1.5 border-t border-slate-800/80 pt-2">
+                    <button type="button" data-digit="7" class="touch-key">7</button>
+                    <button type="button" data-digit="8" class="touch-key">8</button>
+                    <button type="button" data-digit="9" class="touch-key">9</button>
+                    <button type="button" data-digit="4" class="touch-key">4</button>
+                    <button type="button" data-digit="5" class="touch-key">5</button>
+                    <button type="button" data-digit="6" class="touch-key">6</button>
+                    <button type="button" data-digit="1" class="touch-key">1</button>
+                    <button type="button" data-digit="2" class="touch-key">2</button>
+                    <button type="button" data-digit="3" class="touch-key">3</button>
+                    <button type="button" data-digit="." class="touch-key">.</button>
+                    <button type="button" data-digit="0" class="touch-key">0</button>
+                    <button type="button" data-action="clear-amount" class="touch-key touch-key-clear" aria-label="Clear amount">C</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast" class="pointer-events-none fixed left-1/2 top-5 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-2 border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs text-slate-100 opacity-0 shadow-2xl transition-opacity" role="status" aria-live="polite">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-emerald-400" aria-hidden="true"></i>
+        <span id="toast-message">Notice</span>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

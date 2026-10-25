@@ -1,0 +1,167 @@
+Here is the technical architecture for your app, designed around a fast, offline-first frontend backed by **PocketBase** with real-time sync capabilities.
+
+---
+
+## 1. System Architecture Overview
+
+```text
++-----------------------------------------------------------------------+
+|                           POCKETBASE BACKEND                          |
+|  - Auth Users                                                         |
+|  - Collections: categories, expenses, checkouts                       |
+|  - Realtime SSE Engine (Subscriptions)                                |
++-----------------------------------------------------------------------+
+                                   ▲
+                                   │ HTTPS / Realtime SSE
+                                   ▼
++-----------------------------------------------------------------------+
+|                           FRONTEND APP                                |
+|                                                                       |
+|  +-----------------------+           +-----------------------------+  |
+|  |     LOGIN SCREEN      |  ───────> |      CALCULATOR VIEW        |  |
+|  | (PocketBase Auth JWT) |           | - Store Cart Total          |  |
+|  +-----------------------+           | - Category Budget Cards     |  |
+|                                      | - Quick Entry Pad           |  |
+|                                      | - Cart Item Ledger          |  |
+|                                      +-----------------------------+  |
+|                                                     │                 |
+|                                                     ▼                 |
+|                                      +-----------------------------+  |
+|                                      |     OFFLINE SYNC LAYER      |  |
+|                                      | - Local DB (Couchbase/      |  |
+|                                      |   SQLite / IndexedDB)       |  |
+|                                      | - Mutation Queue (Outbox)   |  |
+|                                      | - PocketBase Realtime SSE   |  |
+|                                      +-----------------------------+  |
++-----------------------------------------------------------------------+
+
+```
+
+---
+
+## 2. PocketBase Schema & Setup
+
+Since you will manage users and budgets via the PocketBase Admin UI, the database structure needs to cleanly separate category limits from individual transactions (expenses).
+
+### **Collection: `categories**`
+
+Stores the individual budget buckets (e.g., *Groceries*, *Baby*).
+
+| Field | Type | Options | Description |
+| --- | --- | --- | --- |
+| `id` | System | Auto | Primary key |
+| `name` | Text | Non-empty | e.g. "Groceries", "Baby" |
+| `icon` | Text | Optional | e.g. "🛒", "👶" |
+| `monthly_budget` | Number | Min 0 | Total allocated budget for the period |
+| `color_code` | Text | Optional | Tailwind color string (e.g., `emerald`, `sky`) |
+| `user` | Relation | Single -> `users` | Owner of this budget category |
+
+---
+
+### **Collection: `expenses**`
+
+Stores each item added to the cart or checkout session.
+
+| Field | Type | Options | Description |
+| --- | --- | --- | --- |
+| `id` | System | Auto | Primary key / Client Temp ID |
+| `amount` | Number | > 0 | Price of the item |
+| `name` | Text | Optional | Name/description of item |
+| `category` | Relation | Single -> `categories` | Associated budget bucket |
+| `status` | Select | `in_cart`, `completed` | `in_cart` = active shop; `completed` = checked out |
+| `user` | Relation | Single -> `users` | User who created the expense |
+| `created` | DateTime | Auto | Creation timestamp |
+
+---
+
+## 3. Data & Sync Flow Strategy
+
+To achieve **offline functionality + real-time multiplayer updates**, the app relies on a **Local-First Outbox Pattern**:
+
+```text
+[User Action: Add Item]
+       │
+       ▼
+1. Optimistically write item to Local Database & update UI instantly
+       │
+       ├───────────────────────────────┐
+       ▼ (If Online)                   ▼ (If Offline)
+2. Send HTTP POST to PocketBase   2. Save mutation to Local Outbox Queue
+       │                               │
+       ├───────────────────────────────┘
+       ▼
+3. On network reconnect: Flush Outbox Queue to PocketBase sequentially
+       │
+       ▼
+4. PocketBase fires Realtime SSE Event to all subscribed devices
+       │
+       ▼
+5. Other devices update their local state & UI seamlessly
+
+```
+
+### **Handling Real-time & Conflict Resolution:**
+
+1. **PocketBase Subscriptions:** Upon login, the app subscribes to changes in `categories` and `expenses` via the SDK:
+```javascript
+// Listen to cart expenses in real-time
+pb.collection('expenses').subscribe('*', function (e) {
+    handleRealtimeExpenseEvent(e);
+}, { filter: 'status = "in_cart"' });
+
+```
+
+
+2. **Last-Write-Wins (LWW):** For cart updates, items added on any connected device automatically pop into the running cart list on all synced screens.
+
+---
+
+## 4. Frontend View State & Architecture
+
+The application UI is kept minimal with two main states:
+
+### **Screen A: Login View**
+
+* **UI:** Clean, discreet login card (Email/Username + Password).
+* **Behavior:** On submit, authenticates against PocketBase (`pb.collection('users').authWithPassword()`).
+* **Session Persistence:** Saves auth token locally so reopening the app bypasses the login screen.
+
+### **Screen B: Shopping Assistant (Calculator View)**
+
+Once authenticated:
+
+1. **Header:** Displays live aggregated **Store Total** ($\sum \text{in\_cart expenses}$) across all categories.
+2. **Category Cards:** Fetches active `categories` from PocketBase/Local DB and dynamically computes:
+
+$$\text{Remaining Balance} = \text{monthly\_budget} - (\text{historical\_spent} + \text{current\_cart\_spent})$$
+
+
+3. **Item Input Pad:**
+* Numeric keypad input + optional text field.
+* Renders dynamic action buttons for each active category fetched from PocketBase (e.g., `+ Groceries`, `+ Baby`).
+
+
+4. **Current Cart Ledger:**
+* Scrollable list of `in_cart` items.
+* `✕` button to soft-delete/cancel an item.
+
+
+5. **Checkout Action:**
+* Tapping "Complete Checkout" updates all current `in_cart` items to `status = 'completed'` in one batch/transaction, clearing the active store cart for the next run.
+
+
+
+---
+
+## 5. Technology Recommendations
+
+| Layer | Recommended Choice | Rationale |
+| --- | --- | --- |
+| **Backend / DB** | **PocketBase** | Single-file executable, built-in SQLite, Auth, and Realtime Server-Sent Events (SSE) out of the box. |
+| **Frontend Framework** | **Flutter / Dart** OR **JS (Svelte/Vanilla/React) + PWA** | Highly responsive, fast startup time on mobile devices. |
+| **Local Storage** | **SQLite / Couchbase Lite / IndexedDB** | Stores local cache and outbox queue for offline capability. |
+| **PocketBase SDK** | Official JS / Dart SDK | Handles authentication tokens, auto-cancellation, and SSE subscriptions effortlessly. |
+
+---
+
+Would you like to start building out the implementation files for this (such as the PocketBase migration/schema scripts or the frontend auth + sync setup)?
