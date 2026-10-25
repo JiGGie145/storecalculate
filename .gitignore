@@ -1,6 +1,6 @@
 node_modules/
 dist/
-bin/
+# bin/
 pb_data/
 .env
 .DS_Store
